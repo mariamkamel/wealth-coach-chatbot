@@ -3,8 +3,10 @@ import os
 from typing import Literal
 
 import openai
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request
 from pydantic import BaseModel, Field
+import pandas as pd
+import json
 
 app = FastAPI()
 
@@ -17,10 +19,9 @@ class Conversation(BaseModel):
     content: str
 
 
-backend_history: list[Conversation] = [
-    {
-        "role": "system",
-        "content": "You'are a friendly and professional personal financial advisor assistant chatbot designed to provide personalized financial advice and wealth management solutions to users based on their specific data such as income, expenses, savings, and financial goals, etc\
+initialConv = {
+    "role": "system",
+    "content": "You'are a friendly and professional personal financial advisor assistant chatbot designed to provide personalized financial advice and wealth management solutions to users based on their specific data such as income, expenses, savings, and financial goals, etc\
                if you need more info from the user you can ask him only one question and waits for the user's response then after his answer you can ask the next one. \
                you MUST consider the following: \
                 - you are a professional financial advisor that have a great knowledge, \
@@ -28,31 +29,67 @@ backend_history: list[Conversation] = [
                 - if  you need any user's info you MUST ask only about one INFO  per time and waits for the user's reply before any step further \
                 - YOU CAN'T DISPLAY MORE THAN ONE QUESTION PER TIME\
                 - use relevant emojis",
-    }
-]
+}
+backend_history: list[object] = [initialConv]
 
 
-class ConversationHistory(BaseModel):
-    history: list[object]
+@app.post("/user_data")
+async def user_data(file: UploadFile = File(...), tool_name: str = Form(...)):
+    try:
+        print(tool_name)
+        ext = os.path.splitext(file.filename)[-1]
+        if ext.lower() != ".csv":
+            raise HTTPException(status_code=422, detail="Uploaded file is not a CSV.")
 
+        # Read the uploaded CSV file into a DataFrame
+        df = pd.read_csv(file.file)
 
-@app.get("/")
-async def health_check():
-    return {"status": "OK!"}
+        # validate csv columns against tools columns
+        columns = df.columns.tolist()
+        ynab_columns = list(
+            [
+                "Account",
+                "Flag",
+                "Date",
+                "Payee",
+                "Category Group/Category",
+                "Category Group",
+                "Category",
+                "Memo",
+                "Outflow",
+                "Inflow",
+                "Cleared",
+            ]
+        )
+        if columns != ynab_columns:
+            print("invalid data")
+            return 400
+        backend_history.append(
+            {
+                "role": "user",
+                "content": f"please consider the following user's data extracted from the user's ynab account budget the following array \
+                                contains the budget each transaction contains the following fields: {ynab_columns} \
+                                 {df.values.tolist()}",
+            }
+        )
+        print(backend_history)
+        return 200
+    except Exception as e:
+        # If an error occurs during processing, you can raise an HTTPException with an appropriate status code
+        raise HTTPException(
+            status_code=500, detail="An error occurred during data processing."
+        )
 
 
 @app.post("/chat")
-async def llm_response(history: ConversationHistory) -> dict:
-    # Step 0: Receive the API payload as a dictionary
-    print("history", history)
+async def llm_response(request: Request) -> dict:
+    data = await request.json()
+    print("history", data)
 
-    history = history.dict()
-    # Step 1: Initialize messages with a system prompt and conversation history
-    backend_history.append(history["history"][-1])
+    backend_history.append({"role": "user", "content": data["history"]})
     print("bakend_history", backend_history)
     messages = backend_history
 
-    # Step 2: Generate a response
     llm_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=messages
     )
@@ -65,8 +102,16 @@ async def llm_response(history: ConversationHistory) -> dict:
     )
     print("history", backend_history)
 
-    # Step 3: Return the generated response and the token usage
+    #  Return the generated response and the token usage
     return {
         "message": llm_response.choices[0]["message"],
         "token_usage": llm_response["usage"],
     }
+
+
+@app.post("/clear")
+async def clear():
+    global backend_history
+    backend_history = backend_history[:1]
+    print(backend_history)
+    return 200

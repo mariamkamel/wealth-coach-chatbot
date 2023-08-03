@@ -1,11 +1,18 @@
 # %%writefile utils.py
 from datetime import datetime
+import requests
 
 import pandas as pd
 import streamlit as st
 
 user_avatar = "😃"
 assistant_avatar = "🤑"
+
+clear_url = "http://127.0.0.1:8000/clear"
+
+
+def clear():
+    response = requests.post(clear_url)
 
 
 def display_conversation(conversation_history):
@@ -27,11 +34,14 @@ def display_conversation(conversation_history):
 def clear_conversation():
     """Start New Conversation"""
     if (
-        st.button("🧹 Start New Conversation", use_container_width=True)
+        st.button(
+            "🧹 Start New Conversation", use_container_width=True, key="start_new_conv"
+        )
         or "conversation_history" not in st.session_state
     ):
         st.session_state.conversation_history = []
         st.session_state.total_cost = 0
+        clear()
 
 
 def download_conversation():
@@ -47,6 +57,7 @@ def download_conversation():
         file_name=f"conversation_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv",
         mime="text/csv",
         use_container_width=True,
+        key="download",
     )
 
 

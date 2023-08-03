@@ -3,6 +3,7 @@ import requests
 import streamlit as st
 import utils
 
+
 # Replace with the URL of your backend
 app_url = "http://127.0.0.1:8000/chat"
 
@@ -10,9 +11,9 @@ app_url = "http://127.0.0.1:8000/chat"
 @st.cache_data(show_spinner="🤔 Thinking...")
 def openai_llm_response(user_input):
     """Send the user input to the LLM API and return the response."""
-
+    st.spinner("🤔 Thinking...")
     # Send the entire conversation history to the backend
-    payload = {"history": st.session_state.conversation_history}
+    payload = {"history": user_input}
     response = requests.post(app_url, json=payload).json()
 
     # Generate the unit api call cost and add it to the response
@@ -25,7 +26,17 @@ def openai_llm_response(user_input):
     st.session_state.total_cost += api_call_cost
 
 
-def main():
+def send_users_data(tool_name, uploaded_file):
+    send_users_data_url = "http://localhost:8000/user_data"
+    response = requests.post(
+        send_users_data_url,
+        files={"file": uploaded_file},
+        data={"tool_name": tool_name},
+    ).json()
+
+
+def chatbot():
+    st.empty()
     st.title("🦸 Wealth Coach ChatBot")
     st.markdown("I'm here to give you a customized financial assistance")
 
@@ -52,6 +63,30 @@ def main():
     # Download conversation code runs last to ensure the latest messages are captured
     with col2:
         utils.download_conversation()
+
+
+def main():
+    st.sidebar.title("Navigation")
+    pages = ["Home", "Chatbot"]
+    choice = st.sidebar.selectbox("Go to", pages)
+
+    if choice == "Home":
+        st.subheader(
+            "Before starting, are you using one of these management apps that you wish importing your personal data from?"
+        )
+        selectedApp = st.selectbox("Available apps:", ["YNAB"])
+        uploaded_file = st.file_uploader(
+            "Upload your " + selectedApp + " csv file here...", type=["csv"]
+        )
+        skip = st.button("Skip")
+        if skip:
+            choice = "Chatbot"
+        if uploaded_file is not None:
+            print(uploaded_file)
+
+            send_users_data("ynab", uploaded_file)
+    elif choice == "Chatbot":
+        chatbot()
 
 
 if __name__ == "__main__":
