@@ -4,13 +4,14 @@ from typing import Literal
 
 import openai
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import pandas as pd
-import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
-# Load your API key from an environment variable or secret management service
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 

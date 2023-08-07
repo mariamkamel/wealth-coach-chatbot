@@ -8,10 +8,9 @@ import utils
 app_url = "http://127.0.0.1:8000/chat"
 
 
-@st.cache_data(show_spinner="🤔 Thinking...")
+@st.spinner("🤔 Thinking...")
 def openai_llm_response(user_input):
     """Send the user input to the LLM API and return the response."""
-    st.spinner("🤔 Thinking...")
     # Send the entire conversation history to the backend
     payload = {"history": user_input}
     response = requests.post(app_url, json=payload).json()
