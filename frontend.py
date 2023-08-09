@@ -2,10 +2,13 @@
 import requests
 import streamlit as st
 import utils
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Replace with the URL of your backend
-app_url = "http://127.0.0.1:8000/chat"
+app_url = os.getenv("APP_URL")
 
 
 @st.spinner("🤔 Thinking...")
