@@ -14,11 +14,6 @@ app = FastAPI()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
-class Conversation(BaseModel):
-    role: Literal["system", "assistant", "user"]
-    content: str
-
-
 initialConv = {
     "role": "system",
     "content": "You'are a friendly and professional personal financial advisor assistant chatbot designed to provide personalized financial advice and wealth management solutions to users based on their specific data such as income, expenses, savings, and financial goals, etc\
