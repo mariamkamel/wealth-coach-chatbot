@@ -3,3 +3,7 @@ streamlit_chat
 sentence_transformers
 uvicorn
 openai
+fastapi
+pydantic
+python-dotenv
+pandas
