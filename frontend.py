@@ -4,6 +4,7 @@ import streamlit as st
 import utils
 import os
 from dotenv import load_dotenv
+from random import randint
 
 load_dotenv()
 
@@ -11,11 +12,23 @@ load_dotenv()
 app_url = os.getenv("APP_URL")
 
 
+def initialize_session():
+    session_state = st.session_state
+    if "user_id" not in session_state:
+        session_state.user_id = randint(1, 3000)
+    return session_state
+
+
+# Get the current session state
+session_state = initialize_session()
+
+
 @st.spinner("🤔 Thinking...")
 def openai_llm_response(user_input):
     """Send the user input to the LLM API and return the response."""
+    print("id", st.session_state.user_id)
     # Send the entire conversation history to the backend
-    payload = {"history": user_input}
+    payload = {"history": user_input, "id": session_state.user_id}
     response = requests.post(app_url, json=payload).json()
 
     # Generate the unit api call cost and add it to the response
@@ -29,11 +42,15 @@ def openai_llm_response(user_input):
 
 
 def send_users_data(tool_name, uploaded_file):
+    print(st.session_state.user_id)
     send_users_data_url = "http://localhost:8000/user_data"
     response = requests.post(
         send_users_data_url,
         files={"file": uploaded_file},
-        data={"tool_name": tool_name},
+        data={
+            "id": st.session_state.user_id,
+            "tool_name": tool_name,
+        },
     ).json()
 
 
@@ -69,7 +86,7 @@ def chatbot():
 
 def main():
     st.sidebar.title("Navigation")
-    pages = ["Home", "Chatbot"]
+    pages = ["Chatbot", "Home"]
     choice = st.sidebar.selectbox("Go to", pages)
 
     if choice == "Home":

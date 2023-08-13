@@ -12,7 +12,10 @@ clear_url = "http://127.0.0.1:8000/clear"
 
 
 def clear():
-    response = requests.post(clear_url)
+    print(st.session_state.user_id)
+    payload = {"id": st.session_state.user_id}
+
+    response = requests.post(clear_url, json=payload)
 
 
 def display_conversation(conversation_history):

@@ -25,13 +25,33 @@ initialConv = {
                 - YOU CAN'T DISPLAY MORE THAN ONE QUESTION PER TIME\
                 - use relevant emojis",
 }
-backend_history: list[object] = [initialConv]
+backend_history: list[str, list] = [{"id": 0, "conv": [initialConv]}]
+
+
+def find_user_data(id):
+    new_item = None
+    for item in backend_history:
+        if item["id"] == id:
+            new_item = item
+            break
+    if new_item is None:
+        new_item = {"id": id, "conv": [initialConv]}
+        backend_history.append(new_item)
+    return new_item
+
+
+def remove_item_by_id(id_to_remove):
+    data = [item for item in backend_history if item["id"] != id_to_remove]
+    print("Data", data)
+    return data
 
 
 @app.post("/user_data")
-async def user_data(file: UploadFile = File(...), tool_name: str = Form(...)):
+async def user_data(
+    file: UploadFile = File(...), tool_name: str = Form(...), id: int = Form(...)
+):
     try:
-        print(tool_name)
+        print(tool_name, id)
         ext = os.path.splitext(file.filename)[-1]
         if ext.lower() != ".csv":
             raise HTTPException(status_code=422, detail="Uploaded file is not a CSV.")
@@ -59,7 +79,8 @@ async def user_data(file: UploadFile = File(...), tool_name: str = Form(...)):
         if columns != ynab_columns:
             print("invalid data")
             return 400
-        backend_history.append(
+        user = find_user_data(id)
+        user["conv"].append(
             {
                 "role": "user",
                 "content": f"please consider the following user's data extracted from the user's ynab account budget the following array \
@@ -79,36 +100,39 @@ async def user_data(file: UploadFile = File(...), tool_name: str = Form(...)):
 @app.post("/chat")
 async def llm_response(request: Request) -> dict:
     data = await request.json()
-    print("history", data)
+    if data["id"] is None:
+        return {"status": 404, "message": "can't find user, please provide id"}
+    user = find_user_data(data["id"])
+    user["conv"].append({"role": "user", "content": data["history"]})
 
-    backend_history.append({"role": "user", "content": data["history"]})
-    print("bakend_history", backend_history)
-    messages = backend_history
+    messages = user["conv"]
 
     llm_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=messages
     )
     print("llm_response", llm_response.choices[0]["message"])
-    backend_history.append(
+    user["conv"].append(
         {
             "role": llm_response.choices[0]["message"].role,
             "content": llm_response.choices[0]["message"].content,
         }
     )
-    print("history", backend_history)
+    print("history id: ", user["id"], " conversation: ", user["conv"])
 
     #  Return the generated response and the token usage
     return {
         "message": llm_response.choices[0]["message"],
         "token_usage": llm_response["usage"],
+        "id": user["id"],
     }
 
 
 @app.post("/clear")
-async def clear():
+async def clear(request: Request):
+    data = await request.json()
     global backend_history
-    backend_history = backend_history[:1]
-    print(backend_history)
+
+    backend_history = remove_item_by_id(data["id"])
     return 200
 
 
