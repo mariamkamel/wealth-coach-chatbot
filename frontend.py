@@ -15,8 +15,8 @@ app_url = os.getenv("APP_URL")
 def openai_llm_response(user_input):
     """Send the user input to the LLM API and return the response."""
     # Send the entire conversation history to the backend
-    payload = {"history": user_input}
-    response = requests.post(app_url, json=payload).json()
+    payload = {"history": user_input, "id": session_state.user_id}
+    response = requests.post(app_url + "chat", json=payload).json()
 
     # Generate the unit api call cost and add it to the response
     api_call_cost = utils.calc_cost(response["token_usage"])
@@ -29,7 +29,8 @@ def openai_llm_response(user_input):
 
 
 def send_users_data(tool_name, uploaded_file):
-    send_users_data_url = "http://localhost:8000/user_data"
+    print(st.session_state.user_id)
+    send_users_data_url = app_url + "user_data"
     response = requests.post(
         send_users_data_url,
         files={"file": uploaded_file},

@@ -3,12 +3,18 @@ from datetime import datetime
 import requests
 
 import pandas as pd
+import os
 import streamlit as st
+from dotenv import load_dotenv
 
+load_dotenv()
+
+# Replace with the URL of your backend
+app_url = os.getenv("APP_URL")
 user_avatar = "😃"
 assistant_avatar = "🤑"
 
-clear_url = "http://127.0.0.1:8000/clear"
+clear_url = app_url + "clear"
 
 
 def clear():
