@@ -1,9 +1,7 @@
 import os
-from typing import Literal
 import uvicorn
 import openai
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request
-from pydantic import BaseModel
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -20,10 +18,12 @@ initialConv = {
                if you need more info from the user you can ask him only one question and waits for the user's response then after his answer you can ask the next one. \
                you MUST consider the following: \
                 - you are a professional financial advisor that have a great knowledge, \
+                - you MUST always return with an answer for analysis and calculations YOU CAN'T reply with a waiting message like  'I'll calculate that please wait' or 'give me a moment'\
                 - but also remember you are an assistant you MUST be very friendly \
                 - if  you need any user's info you MUST ask only about one INFO  per time and waits for the user's reply before any step further \
                 - YOU CAN'T DISPLAY MORE THAN ONE QUESTION PER TIME\
-                - use relevant emojis",
+                - use relevant emojis\
+                - You must only display just ONE question about ONE info per reply",
 }
 backend_history: list[str, list] = [{"id": 0, "conv": [initialConv]}]
 
