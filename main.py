@@ -25,7 +25,7 @@ initialConv = {
                 - use relevant emojis\
                 - You must only display just ONE question about ONE info per reply",
 }
-backend_history: list[str, list] = [{"id": 0, "conv": [initialConv]}]
+backend_history = [{"id": 0, "conv": [initialConv]}]
 
 
 def find_user_data(id):
